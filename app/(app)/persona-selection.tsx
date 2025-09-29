@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { PersonaStorage } from '@/utils/personaStorage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Heart, Users, Chrome as Home, Sparkles } from 'lucide-react-native';
+import { PersonaQuestions } from '@/components/PersonaQuestions';
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
@@ -54,12 +56,24 @@ const personas: PersonaCard[] = [
 export default function PersonaSelectionScreen() {
   const router = useRouter();
   const [selectedPersona, setSelectedPersona] = useState<string | null>(null);
+  const [showQuestions, setShowQuestions] = useState(false);
 
-  const handlePersonaSelect = (personaId: string) => {
+  const handlePersonaSelect = async (personaId: string) => {
     setSelectedPersona(personaId);
-    setTimeout(() => {
-      router.push('/(tabs)/onboarding');
-    }, 500);
+    setShowQuestions(true);
+  };
+
+  const handleQuestionsComplete = async (answers: Record<string, string>) => {
+    if (selectedPersona) {
+      try {
+        await PersonaStorage.saveSelectedPersona(selectedPersona);
+        await PersonaStorage.savePersonaAnswers(selectedPersona, answers);
+        router.replace('/(app)/(tabs)');
+      } catch (error) {
+        console.error('Failed to save persona data:', error);
+        Alert.alert('Error', 'Failed to save your responses. Please try again.');
+      }
+    }
   };
 
 
@@ -68,35 +82,42 @@ export default function PersonaSelectionScreen() {
       colors={['#F8F5FF', '#E6F3FF', '#FFF0F5']}
       style={styles.container}
     >
-      <OnboardingProgress progress={0.1} />
+      <OnboardingProgress progress={showQuestions ? 0.2 : 0.1} />
       
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.title}>What Do You Want to Use{'\n'}Tendlie For?</Text>
-          <Text style={styles.subtitle}>
-            Choose your path to start your personalized journey
-          </Text>
-        </View>
+      {!showQuestions ? (
+        <View style={styles.content}>
+          <View style={styles.header}>
+            <Text style={styles.title}>What Do You Want to Use{'\n'}Tendlie For?</Text>
+            <Text style={styles.subtitle}>
+              Choose your path to start your personalized journey
+            </Text>
+          </View>
 
-        <View style={styles.cardsContainer}>
-          {personas.map((persona) => (
-            <TouchableOpacity
-              key={persona.id}
-              style={[
-                styles.personaCard,
-                selectedPersona === persona.id && styles.selectedCard
-              ]}
-              onPress={() => handlePersonaSelect(persona.id)}
-            >
-              <View style={styles.iconContainer}>
-                {persona.icon}
-              </View>
-              <Text style={styles.cardTitle}>{persona.title}</Text>
-              <Text style={styles.cardDescription}>{persona.description}</Text>
-            </TouchableOpacity>
-          ))}
+          <View style={styles.cardsContainer}>
+            {personas.map((persona) => (
+              <TouchableOpacity
+                key={persona.id}
+                style={[
+                  styles.personaCard,
+                  selectedPersona === persona.id && styles.selectedCard
+                ]}
+                onPress={() => handlePersonaSelect(persona.id)}
+              >
+                <View style={styles.iconContainer}>
+                  {persona.icon}
+                </View>
+                <Text style={styles.cardTitle}>{persona.title}</Text>
+                <Text style={styles.cardDescription}>{persona.description}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
-      </View>
+      ) : selectedPersona && (
+        <PersonaQuestions
+          personaId={selectedPersona}
+          onComplete={handleQuestionsComplete}
+        />
+      )}
     </LinearGradient>
   );
 }

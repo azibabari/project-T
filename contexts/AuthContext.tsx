@@ -1,8 +1,7 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
-import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -57,36 +56,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  // Google OAuth configuration
-  const googleAuthRequest = AuthSession.useAuthRequest(
-    {
-      clientId: Platform.select({
-        ios: 'your-ios-client-id.googleusercontent.com',
-        android: 'your-android-client-id.googleusercontent.com',
-        default: 'your-web-client-id.googleusercontent.com',
-      }),
-      scopes: ['openid', 'profile', 'email'],
-      redirectUri: AuthSession.makeRedirectUri({
-        scheme: 'myapp',
-        path: 'auth',
-      }),
-    },
-    { authorizationEndpoint: 'https://accounts.google.com/oauth/authorize' }
-  );
-
-  // Apple OAuth configuration (iOS only)
-  const appleAuthRequest = AuthSession.useAuthRequest(
-    {
-      clientId: 'your-apple-service-id',
-      scopes: ['name', 'email'],
-      redirectUri: AuthSession.makeRedirectUri({
-        scheme: 'myapp',
-        path: 'auth',
-      }),
-    },
-    { authorizationEndpoint: 'https://appleid.apple.com/auth/authorize' }
-  );
 
   useEffect(() => {
     checkAuthState();
@@ -175,20 +144,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signInWithGoogle = async () => {
     try {
       setIsLoading(true);
-      const result = await googleAuthRequest[1]?.promptAsync();
-      
-      if (result?.type === 'success') {
-        // In a real app, exchange the code for tokens
-        const mockUser = {
-          id: '1',
-          email: 'google.user@gmail.com',
-          name: 'Google User',
-        };
-        
-        const token = 'mock_google_token';
-        await storage.setItem('auth_token', token);
-        setUser(mockUser);
-      }
+
+      // For demo purposes, simulate Google OAuth
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      const mockUser = {
+        id: '1',
+        email: 'google.user@gmail.com',
+        name: 'Google User',
+      };
+
+      const token = 'mock_google_token';
+      await storage.setItem('auth_token', token);
+      setUser(mockUser);
     } catch (error) {
       throw new Error('Google sign-in failed');
     } finally {
@@ -199,20 +167,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signInWithApple = async () => {
     try {
       setIsLoading(true);
-      const result = await appleAuthRequest[1]?.promptAsync();
-      
-      if (result?.type === 'success') {
-        // In a real app, exchange the code for tokens
-        const mockUser = {
-          id: '1',
-          email: 'apple.user@icloud.com',
-          name: 'Apple User',
-        };
-        
-        const token = 'mock_apple_token';
-        await storage.setItem('auth_token', token);
-        setUser(mockUser);
-      }
+
+      // For demo purposes, simulate Apple OAuth
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      const mockUser = {
+        id: '1',
+        email: 'apple.user@icloud.com',
+        name: 'Apple User',
+      };
+
+      const token = 'mock_apple_token';
+      await storage.setItem('auth_token', token);
+      setUser(mockUser);
     } catch (error) {
       throw new Error('Apple sign-in failed');
     } finally {

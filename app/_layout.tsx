@@ -1,23 +1,21 @@
-import { useEffect } from 'react';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import { useFrameworkReady } from '@/hooks/useFrameworkReady';
-import { 
-  useFonts, 
-  Lora_400Regular, 
-  Lora_500Medium, 
-  Lora_600SemiBold, 
-  Lora_700Bold 
+import {
+    Lora_400Regular,
+    Lora_500Medium,
+    Lora_600SemiBold,
+    Lora_700Bold,
 } from '@expo-google-fonts/lora';
-import * as SplashScreen from 'expo-splash-screen';
-import { AuthProvider } from '@/contexts/AuthContext';
+import { useFonts } from 'expo-font';
+import { Stack, SplashScreen } from 'expo-router';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { AuthProvider } from '../contexts/AuthContext';
+import * as ExpoSplashScreen from 'expo-splash-screen';
+import { useEffect } from 'react';
+import { Slot } from "expo-router";
 
 // Prevent splash screen from auto-hiding
-SplashScreen.preventAutoHideAsync();
+ExpoSplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  useFrameworkReady();
-
   const [fontsLoaded, fontError] = useFonts({
     'Lora_400Regular': Lora_400Regular,
     'Lora_500Medium': Lora_500Medium,
@@ -26,28 +24,24 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync();
-    }
-  }, [fontsLoaded, fontError]);
+    if (fontError) throw fontError;
+  }, [fontError]);
 
-  if (!fontsLoaded && !fontError) {
+  useEffect(() => {
+    if (fontsLoaded) {
+      ExpoSplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) {
     return null;
   }
 
   return (
-    <>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <AuthProvider>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="splash" />
-          <Stack.Screen name="persona-selection" />
-          <Stack.Screen name="auth" />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="+not-found" />
-        </Stack>
+        <Slot />
       </AuthProvider>
-      <StatusBar style="auto" />
-    </>
+    </GestureHandlerRootView>
   );
 }

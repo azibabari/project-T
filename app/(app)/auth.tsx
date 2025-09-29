@@ -20,6 +20,7 @@ import Animated, {
   withTiming,
   withDelay
 } from 'react-native-reanimated';
+import { PersonaStorage } from '@/utils/personaStorage';
 import { useAuth } from '@/contexts/AuthContext';
 
 type AuthMode = 'welcome' | 'login' | 'signup';
@@ -65,10 +66,16 @@ const AuthScreen = () => {
     try {
       if (mode === 'signup') {
         await signUp(email, password);
-        Alert.alert('Success', 'Account created! Please check your email to verify your account.');
+        router.replace('/persona-selection');
       } else {
         await signIn(email, password);
-        router.replace('/(tabs)');
+        // Check if user has already selected a persona
+        const selectedPersona = await PersonaStorage.getSelectedPersona();
+        if (selectedPersona) {
+          router.replace('/(app)/(tabs)');
+        } else {
+          router.replace('/persona-selection');
+        }
       }
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Authentication failed');
@@ -85,7 +92,14 @@ const AuthScreen = () => {
       } else {
         await signInWithApple();
       }
-      router.replace('/(tabs)');
+
+      // Check if user has already selected a persona
+      const selectedPersona = await PersonaStorage.getSelectedPersona();
+      if (selectedPersona) {
+        router.replace('/(app)/(tabs)');
+      } else {
+        router.replace('/persona-selection');
+      }
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Social authentication failed');
     } finally {
@@ -114,7 +128,7 @@ const AuthScreen = () => {
       <Animated.View style={[styles.actionButtons, contentAnimatedStyle]}>
         <TouchableOpacity
           style={styles.primaryButton}
-          onPress={() => router.push('/auth')}
+          onPress={() => setMode('signup')}
         >
           <Text style={styles.primaryButtonText}>Get Started</Text>
         </TouchableOpacity>
