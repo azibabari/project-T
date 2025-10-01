@@ -1,18 +1,10 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { PersonaQuestions } from '@/components/PersonaQuestions';
 import { PersonaStorage } from '@/utils/personaStorage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Heart, Users, Chrome as Home, Sparkles } from 'lucide-react-native';
-import { PersonaQuestions } from '@/components/PersonaQuestions';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withTiming,
-  withDelay,
-  useAnimatedProps
-} from 'react-native-reanimated';
-import { OnboardingProgress } from '@/components/OnboardingProgress';
+import { Heart, Sparkles, Users } from 'lucide-react-native';
+import React, { useState } from 'react';
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface PersonaCard {
   id: string;
@@ -76,14 +68,17 @@ export default function PersonaSelectionScreen() {
     }
   };
 
+  const handleBackToSelection = () => {
+    setShowQuestions(false);
+    setSelectedPersona(null);
+  };
+
 
   return (
     <LinearGradient
       colors={['#F8F5FF', '#E6F3FF', '#FFF0F5']}
       style={styles.container}
     >
-      <OnboardingProgress progress={showQuestions ? 0.2 : 0.1} />
-      
       {!showQuestions ? (
         <View style={styles.content}>
           <View style={styles.header}>
@@ -116,6 +111,7 @@ export default function PersonaSelectionScreen() {
         <PersonaQuestions
           personaId={selectedPersona}
           onComplete={handleQuestionsComplete}
+          onBack={handleBackToSelection}
         />
       )}
     </LinearGradient>
@@ -132,7 +128,7 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   header: {
-    paddingTop: 40,
+    paddingTop: 120, // Bring content down even more
     paddingBottom: 40,
     alignItems: 'center',
   },

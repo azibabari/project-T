@@ -1,27 +1,30 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  TextInput,
-  ScrollView,
-  Alert,
-  Platform,
-  ActivityIndicator,
-  Image,
-} from 'react-native';
+import { useAuth } from '@/contexts/AuthContext';
+import { PersonaStorage } from '@/utils/personaStorage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Heart, Mail, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react-native';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withTiming,
-  withDelay
+import { Eye, EyeOff, Lock, Mail } from 'lucide-react-native';
+import React, { useState } from 'react';
+import AppleLogo from '../../assets/icons/apple-logo.svg';
+import GoogleLogo from '../../assets/icons/google-logo.svg';
+
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withTiming
 } from 'react-native-reanimated';
-import { PersonaStorage } from '@/utils/personaStorage';
-import { useAuth } from '@/contexts/AuthContext';
 
 type AuthMode = 'welcome' | 'login' | 'signup';
 
@@ -66,7 +69,7 @@ const AuthScreen = () => {
     try {
       if (mode === 'signup') {
         await signUp(email, password);
-        router.replace('/persona-selection');
+        router.replace('/(app)/persona-selection');
       } else {
         await signIn(email, password);
         // Check if user has already selected a persona
@@ -74,7 +77,7 @@ const AuthScreen = () => {
         if (selectedPersona) {
           router.replace('/(app)/(tabs)');
         } else {
-          router.replace('/persona-selection');
+          router.replace('/(app)/persona-selection');
         }
       }
     } catch (error: any) {
@@ -98,7 +101,7 @@ const AuthScreen = () => {
       if (selectedPersona) {
         router.replace('/(app)/(tabs)');
       } else {
-        router.replace('/persona-selection');
+        router.replace('/(app)/persona-selection');
       }
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Social authentication failed');
@@ -145,31 +148,13 @@ const AuthScreen = () => {
 
   const renderAuthForm = () => (
     <ScrollView style={styles.formContainer} showsVerticalScrollIndicator={false}>
-      <View style={styles.formHeader}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => setMode('welcome')}
-        >
-          <ArrowLeft size={24} color="#718096" />
-        </TouchableOpacity>
-        
-        <View style={styles.formLogo}>
-          <Image
-            source={{ uri: 'https://res.cloudinary.com/dmjxpa5gy/image/upload/v1756674257/image.jpg_lrafqk.jpg' }}
-            style={styles.logoSmall}
-            resizeMode="contain"
-          />
-          <Text style={styles.logoTextSmall}>Tendlie</Text>
-        </View>
-      </View>
-
       <View style={styles.formContent}>
         <Text style={styles.formTitle}>
           {mode === 'signup' ? 'Create Your Account' : 'Welcome Back'}
         </Text>
         <Text style={styles.formSubtitle}>
-          {mode === 'signup' 
-            ? 'Start your journey to deeper connections' 
+          {mode === 'signup'
+            ? 'Start your journey to deeper connections'
             : 'Continue your journey with Tendlie'
           }
         </Text>
@@ -224,6 +209,16 @@ const AuthScreen = () => {
                 secureTextEntry={!showPassword}
                 autoComplete="password"
               />
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                style={styles.eyeButton}
+              >
+                {showPassword ? (
+                  <EyeOff size={20} color="#718096" />
+                ) : (
+                  <Eye size={20} color="#718096" />
+                )}
+              </TouchableOpacity>
             </View>
           )}
         </View>
@@ -254,7 +249,10 @@ const AuthScreen = () => {
             onPress={() => handleSocialAuth('google')}
             disabled={isLoading}
           >
-            <Text style={styles.socialButtonText}>🔍 Google</Text>
+            <View style={styles.socialButtonContent}>
+              <GoogleLogo width={20} height={20} />
+              <Text style={styles.socialButtonText}>Google</Text>
+            </View>
           </TouchableOpacity>
 
           {Platform.OS === 'ios' && (
@@ -263,7 +261,10 @@ const AuthScreen = () => {
               onPress={() => handleSocialAuth('apple')}
               disabled={isLoading}
             >
-              <Text style={styles.socialButtonText}>🍎 Apple</Text>
+              <View style={styles.socialButtonContent}>
+                <AppleLogo width={20} height={20} />
+                <Text style={styles.socialButtonText}>Apple</Text>
+              </View>
             </TouchableOpacity>
           )}
         </View>
@@ -273,8 +274,8 @@ const AuthScreen = () => {
           onPress={() => setMode(mode === 'signup' ? 'login' : 'signup')}
         >
           <Text style={styles.switchModeText}>
-            {mode === 'signup' 
-              ? 'Already have an account? Sign in' 
+            {mode === 'signup'
+              ? 'Already have an account? Sign in'
               : "Don't have an account? Sign up"
             }
           </Text>
@@ -301,19 +302,20 @@ export default AuthScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingTop: 24,
   },
   welcomeContainer: {
     flex: 1,
     justifyContent: 'space-between',
     paddingHorizontal: 32,
-    paddingTop: 80,
+    paddingTop: 120,
     paddingBottom: 60,
   },
   logoSection: {
     alignItems: 'center',
     flex: 1,
     justifyContent: 'center',
-    paddingTop: 20,
+    paddingTop: 40,
   },
   logo: {
     width: 120,
@@ -389,7 +391,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 24,
-    paddingTop: 60,
+    paddingTop: 96,
     paddingBottom: 32,
   },
   backButton: {
@@ -402,28 +404,10 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 1,
   },
-  formLogo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    justifyContent: 'center',
-  },
-  logoSmall: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-  },
-  logoTextSmall: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#2D3748',
-    fontFamily: 'Lora_700Bold',
-  },
+
   formContent: {
     paddingHorizontal: 24,
+    paddingTop: 120,
     paddingBottom: 32,
   },
   formTitle: {
@@ -531,6 +515,12 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 1,
   },
+  socialButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+
   socialButtonText: {
     fontSize: 16,
     fontWeight: '500',

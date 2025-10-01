@@ -46,7 +46,7 @@ const SplashScreen = () => {
 
     // Auto navigate after 10 seconds
     const timer = setTimeout(() => {
-      router.replace('/auth');
+      router.replace('/(app)/auth');
     }, 3000);
 
     return () => clearTimeout(timer);

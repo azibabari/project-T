@@ -1,7 +1,14 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Heart, Users, UserCircle, Brain, ChevronRight } from "lucide-react-native";
+import { ArrowLeft, Check, ChevronRight } from "lucide-react-native";
+import React, { useEffect, useState } from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import Animated, {
+    useAnimatedStyle,
+    useSharedValue,
+    withSpring,
+    withTiming
+} from 'react-native-reanimated';
+import { OnboardingProgress } from './OnboardingProgress';
 
 interface PersonaQuestion {
   id: string;
@@ -116,82 +123,140 @@ const questionsByPersona = {
 interface PersonaQuestionsProps {
   personaId: string;
   onComplete: (answers: Record<string, string>) => void;
+  onBack?: () => void;
 }
 
-export function PersonaQuestions({ personaId, onComplete }: PersonaQuestionsProps) {
+export function PersonaQuestions({ personaId, onComplete, onBack }: PersonaQuestionsProps) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const questions = questionsByPersona[personaId as keyof typeof questionsByPersona] || [];
 
-  const handleOptionSelect = (questionId: string, value: string) => {
+  // Animation values
+  const questionOpacity = useSharedValue(1);
+  const questionTranslateY = useSharedValue(0);
+
+  const currentQuestion = questions[currentQuestionIndex];
+  const isLastQuestion = currentQuestionIndex === questions.length - 1;
+
+  useEffect(() => {
+    // Animate question entrance
+    questionOpacity.value = withTiming(1, { duration: 400 });
+    questionTranslateY.value = withSpring(0, { damping: 15, stiffness: 150 });
+  }, [currentQuestionIndex]);
+
+  const handleOptionSelect = (value: string) => {
+    const questionId = currentQuestion.id;
+
     setAnswers(prev => ({
       ...prev,
       [questionId]: value,
     }));
+
+    // Animate question exit and move to next
+    questionOpacity.value = withTiming(0, { duration: 300 });
+    questionTranslateY.value = withTiming(-50, { duration: 300 });
+
+    // Use setTimeout to handle the next action after animation
+    setTimeout(() => {
+      if (isLastQuestion) {
+        // Complete the questionnaire
+        onComplete({ ...answers, [questionId]: value });
+      } else {
+        // Move to next question
+        setCurrentQuestionIndex(prev => prev + 1);
+        questionTranslateY.value = 50;
+        questionOpacity.value = 0;
+      }
+    }, 300);
   };
 
-  const isComplete = questions.every(q => answers[q.id]);
+  const handleBack = () => {
+    if (currentQuestionIndex > 0) {
+      // Go back to previous question
+      questionOpacity.value = withTiming(0, { duration: 200 });
+      questionTranslateY.value = withTiming(50, { duration: 200 });
+
+      // Use setTimeout to handle the next action after animation
+      setTimeout(() => {
+        setCurrentQuestionIndex(prev => prev - 1);
+        questionTranslateY.value = -50;
+        questionOpacity.value = 0;
+      }, 200);
+    } else if (onBack) {
+      // Go back to persona selection
+      onBack();
+    }
+  };
+
+  // Animated styles
+  const questionAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: questionOpacity.value,
+    transform: [{ translateY: questionTranslateY.value }],
+  }));
+
+  if (!currentQuestion) return null;
+
+  // Calculate progress for the progress bar (start from 0 on first question)
+  const progressValue = currentQuestionIndex / questions.length;
 
   return (
     <LinearGradient colors={["#F8F5FF", "#E6F3FF", "#FFF0F5"]} style={styles.container}>
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {questions.map((question) => (
-          <View key={question.id} style={styles.questionContainer}>
-            <Text style={styles.question}>{question.question}</Text>
-            {question.description && (
-              <Text style={styles.questionDescription}>{question.description}</Text>
-            )}
-            <View style={styles.optionsContainer}>
-              {question.options.map((option) => {
-                const isSelected = answers[question.id] === option.value;
-                return (
-                  <TouchableOpacity
-                    key={option.value}
-                    style={[
-                      styles.optionCard,
-                      isSelected && styles.selectedOption
-                    ]}
-                    onPress={() => handleOptionSelect(question.id, option.value)}
-                  >
-                    <Text style={[
-                      styles.optionLabel,
-                      isSelected && styles.selectedText
-                    ]}>
-                      {option.label}
-                    </Text>
+      {/* Back Button at the very top */}
+      <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+        <ArrowLeft size={24} color="#718096" />
+      </TouchableOpacity>
+
+      {/* Progress Bar positioned below back button */}
+      <View style={styles.progressWrapper}>
+        <OnboardingProgress progress={progressValue} />
+      </View>
+
+      {/* Question Content */}
+      <Animated.View style={[styles.questionContent, questionAnimatedStyle]}>
+        <View style={styles.questionHeader}>
+          <Text style={styles.question}>{currentQuestion.question}</Text>
+        </View>
+
+        <View style={styles.optionsContainer}>
+          {currentQuestion.options.map((option) => (
+            <TouchableOpacity
+              key={option.value}
+              style={[
+                styles.optionCard,
+                {
+                  transform: [{
+                    scale: answers[currentQuestion.id] === option.value ? 0.98 : 1
+                  }]
+                }
+              ]}
+              onPress={() => handleOptionSelect(option.value)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.optionContent}>
+                <View style={styles.optionLeft}>
+                  <View style={styles.optionTextContainer}>
+                    <Text style={styles.optionLabel}>{option.label}</Text>
                     {option.description && (
-                      <Text style={[
-                        styles.optionDescription,
-                        isSelected && styles.selectedText
-                      ]}>
-                        {option.description}
-                      </Text>
+                      <Text style={styles.optionDescription}>{option.description}</Text>
                     )}
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-        ))}
-        
-        <TouchableOpacity
-          style={[styles.continueButton, !isComplete && styles.disabledButton]}
-          onPress={() => isComplete && onComplete(answers)}
-          disabled={!isComplete}
-        >
-          <LinearGradient
-            colors={isComplete ? ["#89CFF0", "#81a8ae", "#6d9499"] : ["#E2E8F0", "#CBD5E0"]}
-            style={styles.buttonGradient}
-          >
-            <Text style={[
-              styles.buttonText,
-              !isComplete && styles.disabledButtonText
-            ]}>
-              Continue
-            </Text>
-            <ChevronRight size={20} color={isComplete ? "white" : "#A0AEC0"} />
-          </LinearGradient>
-        </TouchableOpacity>
-      </ScrollView>
+                  </View>
+                </View>
+                <ChevronRight size={16} color="#CBD5E0" />
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </Animated.View>
+
+      {/* Completion Message */}
+      {isLastQuestion && (
+        <View style={styles.completionHint}>
+          <Check size={16} color="#81a8ae" />
+          <Text style={styles.completionText}>
+            Choose your answer to complete your profile
+          </Text>
+        </View>
+      )}
     </LinearGradient>
   );
 }
@@ -199,92 +264,94 @@ export function PersonaQuestions({ personaId, onComplete }: PersonaQuestionsProp
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingTop: 0, // Remove top padding to start from very top
   },
-  content: {
+  backButton: {
+    position: "absolute",
+    top: 50, // Position at the very top (below status bar)
+    left: 24,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+    zIndex: 10,
+  },
+  progressWrapper: {
+    marginTop: 80, // Move progress bar down
+  },
+  questionContent: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 20,
-    paddingBottom: 32,
+    paddingHorizontal: 32,
+    justifyContent: "center",
+    marginTop: -20, // Move questions up to close gap with progress bar
   },
-  questionContainer: {
-    marginBottom: 32,
+  questionHeader: {
+    marginBottom: 32, // Reduced space between question and options
   },
   question: {
-    fontSize: 24,
+    fontSize: 32,
     fontWeight: "700",
     color: "#2D3748",
-    marginBottom: 8,
+    lineHeight: 40,
     fontFamily: "Lora_700Bold",
-  },
-  questionDescription: {
-    fontSize: 16,
-    color: "#718096",
-    marginBottom: 16,
-    fontFamily: "Lora_400Regular",
   },
   optionsContainer: {
     gap: 12,
   },
   optionCard: {
-    backgroundColor: "white",
-    padding: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
     borderRadius: 16,
-    borderWidth: 2,
-    borderColor: "#E2E8F0",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 3,
   },
-  selectedOption: {
-    backgroundColor: "#81a8ae",
-    borderColor: "#81a8ae",
+  optionContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 18,
+  },
+  optionLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  optionTextContainer: {
+    flex: 1,
   },
   optionLabel: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "600",
     color: "#2D3748",
-    marginBottom: 4,
+    marginBottom: 2,
     fontFamily: "Lora_600SemiBold",
   },
   optionDescription: {
     fontSize: 14,
     color: "#718096",
     fontFamily: "Lora_400Regular",
+    lineHeight: 20,
   },
-  selectedText: {
-    color: "white",
-  },
-  continueButton: {
-    borderRadius: 16,
-    overflow: "hidden",
-    marginBottom: 32,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  disabledButton: {
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  buttonGradient: {
-    paddingVertical: 18,
-    paddingHorizontal: 32,
+  completionHint: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    paddingHorizontal: 32,
+    paddingBottom: 40,
     gap: 8,
   },
-  buttonText: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "white",
-    fontFamily: "Lora_600SemiBold",
-  },
-  disabledButtonText: {
-    color: "#A0AEC0",
+  completionText: {
+    fontSize: 16,
+    color: "#81a8ae",
+    fontFamily: "Lora_400Regular",
   },
 });

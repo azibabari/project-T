@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import React from 'react';
+import { StyleSheet, View } from 'react-native';
 
 interface OnboardingProgressProps {
   progress: number; // 0 to 1
@@ -25,7 +25,7 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
     paddingVertical: 20,
-    paddingTop: 60,
+    paddingTop: 20, // Reset to normal padding
   },
   progressTrack: {
     height: 4,

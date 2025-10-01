@@ -5,12 +5,10 @@ import {
     Lora_700Bold,
 } from '@expo-google-fonts/lora';
 import { useFonts } from 'expo-font';
-import { Stack, SplashScreen } from 'expo-router';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { AuthProvider } from '../contexts/AuthContext';
+import { Stack } from 'expo-router';
 import * as ExpoSplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
-import { Slot } from "expo-router";
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 // Prevent splash screen from auto-hiding
 ExpoSplashScreen.preventAutoHideAsync();
@@ -39,9 +37,9 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <AuthProvider>
-        <Slot />
-      </AuthProvider>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(app)" options={{ headerShown: false }} />
+      </Stack>
     </GestureHandlerRootView>
   );
 }
